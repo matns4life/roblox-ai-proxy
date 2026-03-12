@@ -12,14 +12,18 @@ def chat():
         data = request.get_json()
         player_message = data.get("message", "")
         personality = data.get("personality", "a friendly character")
+        messages = data.get("messages", None)
 
-        # Build the system prompt based on personality
-        system_prompt = f"""You are {personality}. 
-Stay in character at ALL times. Never break character.
-Keep your responses short (1-3 sentences max).
-Be fun, expressive, and entertaining.
-Never say you are an AI or a language model.
-React to what the player says in a way that fits your character."""
+        # If full conversation history is provided, use it
+        if messages and isinstance(messages, list):
+            api_messages = messages
+        else:
+            # Fallback: single message mode
+            system_prompt = f"""You are {personality}"""
+            api_messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": player_message}
+            ]
 
         # Call OpenAI API
         response = requests.post(
@@ -30,10 +34,7 @@ React to what the player says in a way that fits your character."""
             },
             json={
                 "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": player_message}
-                ],
+                "messages": api_messages,
                 "max_tokens": 150,
                 "temperature": 0.9
             }
